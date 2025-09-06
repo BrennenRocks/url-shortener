@@ -7,6 +7,7 @@ import { ArrowRightIcon, CheckIcon, CopyIcon, UploadIcon } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ResizableTextarea from '@/components/ui/resizeable-textarea';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { parseUrlsFromHtml } from '@/lib/utils';
@@ -120,51 +121,55 @@ function RouteComponent() {
         <div className="w-full max-w-md px-4 sm:px-0">
           {updatedHtml ? (
             <div className="fade-in-0 slide-in-from-bottom-4 animate-in space-y-4 duration-500">
-              <div className="rounded-lg border border-success/50 bg-success/40 p-3 text-center sm:p-6">
-                <div className="mb-3">
-                  <div className="zoom-in mx-auto flex h-12 w-12 animate-in items-center justify-center rounded-full bg-success/50 duration-300">
-                    <CheckIcon className="h-6 w-6 text-success-foreground" />
+              <Card className="border-primary/50 bg-primary/30 text-center">
+                <CardContent className="pt-6">
+                  <div className="mb-3">
+                    <div className="zoom-in mx-auto flex h-12 w-12 animate-in items-center justify-center rounded-full bg-primary/50 duration-300">
+                      <CheckIcon className="h-6 w-6 text-success-foreground" />
+                    </div>
                   </div>
-                </div>
-                <h3 className="mb-2 font-semibold text-lg text-success-foreground">
-                  URLs Shortened Successfully!
-                </h3>
-                <p className="mb-4 text-sm text-success-foreground/90 leading-relaxed">
-                  Your HTML content has been processed and all URLs have been
-                  shortened.
-                </p>
-              </div>
+                  <CardTitle className="mb-2 text-lg text-success-foreground">
+                    URLs Shortened Successfully!
+                  </CardTitle>
+                  <p className="text-sm text-success-foreground/90 leading-relaxed">
+                    Your HTML content has been processed and all URLs have been
+                    shortened.
+                  </p>
+                </CardContent>
+              </Card>
 
-              <div className="rounded-lg border bg-card p-4 shadow-sm">
-                <div className="mb-3 flex items-center justify-between">
-                  <h4 className="font-medium text-foreground text-sm">
-                    Processed HTML
-                  </h4>
-                  <Button
-                    className="h-8 px-3 text-xs"
-                    onClick={handleCopyToClipboard}
-                    size="sm"
-                    variant="outline"
-                  >
-                    {copySuccess ? (
-                      <>
-                        <CheckIcon className="mr-1 h-3 w-3" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <CopyIcon className="mr-1 h-3 w-3" />
-                        Copy
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <ResizableTextarea
-                  className="min-h-32 w-full resize-none border-0 bg-muted/50 p-3 font-mono text-xs shadow-none focus-visible:ring-0"
-                  readOnly
-                  value={updatedHtml}
-                />
-              </div>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">Processed HTML</CardTitle>
+                    <Button
+                      className="h-8 px-3 text-xs"
+                      onClick={handleCopyToClipboard}
+                      size="sm"
+                      variant="outline"
+                    >
+                      {copySuccess ? (
+                        <>
+                          <CheckIcon className="mr-1 h-3 w-3" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <CopyIcon className="mr-1 h-3 w-3" />
+                          Copy
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ResizableTextarea
+                    className="min-h-32 w-full resize-none border-0 bg-muted/50 p-3 font-mono text-xs shadow-none focus-visible:ring-0"
+                    readOnly
+                    value={updatedHtml}
+                  />
+                </CardContent>
+              </Card>
 
               <div className="flex justify-center">
                 <Button
