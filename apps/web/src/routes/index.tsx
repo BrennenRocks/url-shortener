@@ -3,15 +3,21 @@
 import { useForm } from '@tanstack/react-form';
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { ArrowRightIcon, CheckIcon } from 'lucide-react';
+import { ArrowRightIcon, CheckIcon, UploadIcon } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import ResizableTextarea from '@/components/ui/resizeable-textarea';
+import { useFileUpload } from '@/hooks/use-file-upload';
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
 });
+
+const BYTES_PER_KB = 1024;
+const KB_PER_MB = 1024;
+const MAX_FILE_SIZE_MB = 1;
+const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * KB_PER_MB * BYTES_PER_KB; // 10MB
 
 function RouteComponent() {
   const [updatedHtml, setUpdatedHtml] = useState('');
@@ -56,9 +62,29 @@ function RouteComponent() {
     },
   });
 
+  const [fileState, fileActions] = useFileUpload({
+    maxFiles: 1,
+    maxSize: MAX_FILE_SIZE,
+    accept: '.html,.htm,.txt',
+    multiple: false,
+    onFilesAdded: async (files) => {
+      if (files.length > 0) {
+        const file = files[0].file;
+        if (file instanceof File) {
+          try {
+            const content = await file.text();
+            form.setFieldValue('html', content);
+          } catch {
+            // Handle file reading error silently for better UX
+            fileActions.clearErrors();
+          }
+        }
+      }
+    },
+  });
+
   return (
     <div className="relative h-svh w-full">
-      {/* Form content - flows naturally on mobile, under top content on desktop */}
       <div
         className={`absolute inset-0 flex flex-col items-center justify-start px-4 text-center md:justify-start ${updatedHtml ? 'mt-2' : 'mt-20'}`}
       >
@@ -104,7 +130,48 @@ function RouteComponent() {
                       <form.Field name="html">
                         {(field) => (
                           <div className="space-y-2">
-                            <div className="rounded-lg border bg-card p-4 shadow-sm transition-all duration-300 focus-within:shadow-md focus-within:ring-2 focus-within:ring-ring/20">
+                            {/** biome-ignore lint/a11y/useFocusableInteractive: Must be a div because we are nesting a button */}
+                            {/** biome-ignore lint/a11y/useSemanticElements: Must be a div because we are nesting a button */}
+                            <div
+                              className={`relative w-full rounded-lg border bg-card p-4 text-left shadow-sm transition-all duration-300 focus-within:shadow-md focus-within:ring-2 focus-within:ring-ring/20 ${
+                                fileState.isDragging
+                                  ? 'border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20'
+                                  : 'hover:shadow-md'
+                              }`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                fileActions.openFileDialog();
+                              }}
+                              onDragEnter={fileActions.handleDragEnter}
+                              onDragLeave={fileActions.handleDragLeave}
+                              onDragOver={fileActions.handleDragOver}
+                              onDrop={fileActions.handleDrop}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  fileActions.openFileDialog();
+                                }
+                              }}
+                              role="button"
+                            >
+                              {/* Drag overlay */}
+                              {fileState.isDragging && (
+                                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-primary/10 backdrop-blur-sm">
+                                  <div className="flex flex-col items-center space-y-2 text-primary">
+                                    <UploadIcon className="h-8 w-8" />
+                                    <p className="font-medium text-sm">
+                                      Drop your HTML file here
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Hidden file input */}
+                              <input
+                                {...fileActions.getInputProps()}
+                                className="hidden"
+                              />
+
                               <div className="space-y-3">
                                 <div className="relative flex items-center">
                                   <ResizableTextarea
@@ -120,7 +187,7 @@ function RouteComponent() {
                                     onChange={(e) =>
                                       field.handleChange(e.target.value)
                                     }
-                                    placeholder="Paste your HTML content here..."
+                                    placeholder="Paste HTML or drop a file..."
                                     value={field.state.value}
                                   />
                                 </div>
@@ -152,6 +219,16 @@ function RouteComponent() {
                                 key={error?.message}
                               >
                                 {error?.message}
+                              </p>
+                            ))}
+
+                            {/* File upload errors */}
+                            {fileState.errors.map((error) => (
+                              <p
+                                className="text-destructive text-sm dark:text-red-400 dark:drop-shadow-sm"
+                                key={error}
+                              >
+                                {error}
                               </p>
                             ))}
                           </div>
