@@ -7,7 +7,21 @@ import { toBase62 } from './utils';
 export async function shortenUrl(longUrl: string) {
   try {
     return await db.transaction(async (tx) => {
-      // First, insert the long URL and get the ID
+      // First, check if the long URL already exists
+      const [existingUrl] = await tx
+        .select({
+          shortUrl: urls.shortUrl,
+        })
+        .from(urls)
+        .where(eq(urls.longUrl, longUrl))
+        .limit(1);
+
+      // If URL already exists, return the existing short URL
+      if (existingUrl) {
+        return existingUrl.shortUrl;
+      }
+
+      // If not found, insert the long URL and get the ID
       const [insertedUrl] = await tx
         .insert(urls)
         .values({
@@ -34,5 +48,25 @@ export async function shortenUrl(longUrl: string) {
     });
   } catch {
     throw new Error('Failed to shorten URL');
+  }
+}
+
+export async function getUrlByShortUrl(shortUrl: string) {
+  try {
+    const [urlRecord] = await db
+      .select({
+        longUrl: urls.longUrl,
+      })
+      .from(urls)
+      .where(eq(urls.shortUrl, shortUrl))
+      .limit(1);
+
+    if (!urlRecord) {
+      return null;
+    }
+
+    return urlRecord.longUrl;
+  } catch {
+    throw new Error('Failed to retrieve URL');
   }
 }

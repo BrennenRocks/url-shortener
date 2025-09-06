@@ -5,9 +5,11 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import z from 'zod';
-import { shortenUrl } from './url.service';
+import { getUrlByShortUrl, shortenUrl } from './url.service';
 
 const HTTP_STATUS_INTERNAL_SERVER_ERROR = 500;
+const HTTP_STATUS_NOT_FOUND = 404;
+const HTTP_STATUS_MOVED_PERMANENTLY = 301;
 
 const app = new Hono();
 
@@ -56,6 +58,42 @@ app.post(
         {
           success: false,
           error: 'Failed to shorten URLs',
+        },
+        HTTP_STATUS_INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+);
+
+app.get(
+  '/url',
+  zValidator(
+    'query',
+    z.object({
+      shortUrl: z.url('Invalid URL'),
+    })
+  ),
+  async (c) => {
+    try {
+      const { shortUrl } = c.req.valid('query');
+      const longUrl = await getUrlByShortUrl(shortUrl);
+
+      if (!longUrl) {
+        return c.json(
+          {
+            success: false,
+            error: 'Short URL not found',
+          },
+          HTTP_STATUS_NOT_FOUND
+        );
+      }
+
+      return c.redirect(longUrl, HTTP_STATUS_MOVED_PERMANENTLY);
+    } catch {
+      return c.json(
+        {
+          success: false,
+          error: 'Failed to retrieve URL',
         },
         HTTP_STATUS_INTERNAL_SERVER_ERROR
       );

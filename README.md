@@ -1,4 +1,21 @@
-# zaymo-url-shortener
+# URL Shortener
+
+## Short Comings and Considerations
+
+Some URL formats fail at the moment
+
+- https://cdn.example.com/images/thumbnail(200x200).jpg
+
+### Considerations
+
+-Currently we make 2 DB calls to insert a URL so we can retrieve the ID to encode it. We could
+have a counter elsewhere (Redis Cache or something a little more persistent) that we can just read
+to encode instead of 2 write commands
+
+- There's no caching in this implementation but we should use a Redis Cache to stored the most used URLs
+  or we could even store all urls created for 1 week because it may be likely that most urls are "short" lived
+
+# Dev
 
 This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Router, Hono, and more.
 
@@ -21,6 +38,7 @@ First, install the dependencies:
 ```bash
 bun install
 ```
+
 ## Database Setup
 
 This project uses PostgreSQL with Drizzle ORM.
@@ -29,10 +47,10 @@ This project uses PostgreSQL with Drizzle ORM.
 2. Update your `apps/server/.env` file with your PostgreSQL connection details.
 
 3. Apply the schema to your database:
+
 ```bash
 bun db:push
 ```
-
 
 Then, run the development server:
 
@@ -42,10 +60,6 @@ bun dev
 
 Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
 The API is running at [http://localhost:3000](http://localhost:3000).
-
-
-
-
 
 ## Project Structure
 

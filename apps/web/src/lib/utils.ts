@@ -15,9 +15,7 @@ export function parseUrlsFromHtml(htmlContent: string): string[] {
     return [];
   }
 
-  // Comprehensive regex to match http and https URLs
-  const urlRegex =
-    /https?:\/\/(?:[-\w.])+(?::[0-9]+)?(?:\/(?:[\w/_.])*)?(?:\?(?:[\w&=%.])*)?(?:#(?:[\w.])*)?/gi;
+  const urlRegex = /https?:\/\/(?:[-\w._~:/?#[\]@!$&'*+,;=%\u00a1-\uffff])+/gi;
 
   const matches = htmlContent.match(urlRegex);
 
@@ -25,6 +23,5 @@ export function parseUrlsFromHtml(htmlContent: string): string[] {
     return [];
   }
 
-  // Remove duplicates and return unique URLs
   return [...new Set(matches)];
 }

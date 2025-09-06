@@ -77,9 +77,12 @@ function RouteComponent() {
       let processedHtml = htmlContent;
       for (let i = 0; i < urls.length; i++) {
         const originalUrl = urls[i];
-        const shortenedUrl = shortenedUrls[i];
-        if (shortenedUrl) {
-          processedHtml = processedHtml.replaceAll(originalUrl, shortenedUrl);
+        const shortenedUrlObj = shortenedUrls[i];
+        if (shortenedUrlObj?.shortUrl) {
+          processedHtml = processedHtml.replaceAll(
+            originalUrl,
+            shortenedUrlObj.shortUrl
+          );
         }
       }
 
@@ -255,6 +258,17 @@ function RouteComponent() {
                                         onChange={(e) =>
                                           field.handleChange(e.target.value)
                                         }
+                                        onKeyDown={(e) => {
+                                          // Prevent parent div from handling keys that should work normally in textarea
+                                          // This ensures proper text input and navigation functionality
+
+                                          if (
+                                            e.key === 'Enter' ||
+                                            e.key === ' '
+                                          ) {
+                                            e.stopPropagation();
+                                          }
+                                        }}
                                         placeholder="Paste HTML or drop a file..."
                                         value={field.state.value}
                                       />
