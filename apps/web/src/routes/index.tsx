@@ -3,7 +3,7 @@
 import { useForm } from '@tanstack/react-form';
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { ArrowRightIcon, CheckIcon, CodeIcon } from 'lucide-react';
+import { ArrowRightIcon, CheckIcon } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -60,7 +60,7 @@ function RouteComponent() {
     <div className="relative h-svh w-full">
       {/* Form content - flows naturally on mobile, under top content on desktop */}
       <div
-        className={`absolute inset-0 flex flex-col items-center justify-start px-4 pt-64 text-center md:justify-start md:pt-80 ${updatedHtml ? 'mt-2' : 'mt-20'}`}
+        className={`absolute inset-0 flex flex-col items-center justify-start px-4 text-center md:justify-start ${updatedHtml ? 'mt-2' : 'mt-20'}`}
       >
         <div className="w-full max-w-md px-4 sm:px-0">
           {updatedHtml ? (
@@ -96,7 +96,7 @@ function RouteComponent() {
                       form.handleSubmit();
                     }}
                   >
-                    <div className="group relative">
+                    <div className="relative">
                       <p className="mb-2 text-foreground/90 text-sm leading-relaxed">
                         Paste your HTML content to shorten all URLs
                       </p>
@@ -104,50 +104,48 @@ function RouteComponent() {
                       <form.Field name="html">
                         {(field) => (
                           <div className="space-y-2">
-                            <div className="relative flex items-center overflow-hidden rounded-lg border bg-card shadow-sm transition-all duration-300 group-focus-within:shadow-md group-focus-within:ring-2 group-focus-within:ring-ring/20 group-hover:shadow-md">
-                              <div className="flex items-center pl-3 text-muted-foreground">
-                                <CodeIcon className="h-4 w-4" />
+                            <div className="rounded-lg border bg-card p-4 shadow-sm transition-all duration-300 focus-within:shadow-md focus-within:ring-2 focus-within:ring-ring/20">
+                              <div className="space-y-3">
+                                <div className="relative flex items-center">
+                                  <ResizableTextarea
+                                    className="flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                                    disabled={state.isSubmitting}
+                                    hasError={
+                                      field.state.meta.isTouched &&
+                                      field.state.meta.errors.length > 0
+                                    }
+                                    id={field.name}
+                                    name={field.name}
+                                    onBlur={field.handleBlur}
+                                    onChange={(e) =>
+                                      field.handleChange(e.target.value)
+                                    }
+                                    placeholder="Paste your HTML content here..."
+                                    value={field.state.value}
+                                  />
+                                </div>
+
+                                <div className="flex justify-end">
+                                  <Button
+                                    className="group rounded-full px-6 py-2 font-medium text-sm transition-all duration-300 hover:shadow-md active:scale-95"
+                                    disabled={
+                                      !state.canSubmit ||
+                                      state.isSubmitting ||
+                                      !field.state.value
+                                    }
+                                    size="sm"
+                                    type="submit"
+                                  >
+                                    {state.isSubmitting ? (
+                                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                    ) : (
+                                      <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                    )}
+                                  </Button>
+                                </div>
                               </div>
-
-                              <ResizableTextarea
-                                className="flex-1 border-0 bg-card px-3 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-card"
-                                disabled={state.isSubmitting}
-                                hasError={
-                                  field.state.meta.isTouched &&
-                                  field.state.meta.errors.length > 0
-                                }
-                                id={field.name}
-                                name={field.name}
-                                onBlur={field.handleBlur}
-                                onChange={(e) =>
-                                  field.handleChange(e.target.value)
-                                }
-                                placeholder="Paste your HTML content here..."
-                                value={field.state.value}
-                              />
-
-                              <Button
-                                className="group/button m-1 px-4 transition-all duration-300 active:scale-95"
-                                disabled={
-                                  !state.canSubmit ||
-                                  state.isSubmitting ||
-                                  !field.state.value
-                                }
-                                size="sm"
-                                type="submit"
-                              >
-                                <span className="ml-2 hidden sm:inline">
-                                  {state.isSubmitting
-                                    ? 'Processing...'
-                                    : 'Shorten'}
-                                </span>
-                                {state.isSubmitting ? (
-                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                ) : (
-                                  <ArrowRightIcon className="h-4 w-4 transition-transform group-hover/button:translate-x-0.5" />
-                                )}
-                              </Button>
                             </div>
+
                             {field.state.meta.errors.map((error) => (
                               <p
                                 className="text-destructive text-sm dark:text-red-400 dark:drop-shadow-sm"
