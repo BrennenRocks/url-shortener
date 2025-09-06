@@ -19,11 +19,11 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({
     meta: [
       {
-        title: 'zaymo-url-shortener',
+        title: 'Zaymo | URL Shortener',
       },
       {
         name: 'description',
-        content: 'zaymo-url-shortener is a web application',
+        content: 'A simple URL shortener',
       },
     ],
     links: [
