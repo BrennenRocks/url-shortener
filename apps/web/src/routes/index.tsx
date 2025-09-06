@@ -3,12 +3,13 @@
 import { useForm } from '@tanstack/react-form';
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { ArrowRightIcon, CheckIcon, UploadIcon } from 'lucide-react';
+import { ArrowRightIcon, CheckIcon, CopyIcon, UploadIcon } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import ResizableTextarea from '@/components/ui/resizeable-textarea';
 import { useFileUpload } from '@/hooks/use-file-upload';
+import { parseUrlsFromHtml } from '@/lib/utils';
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
@@ -17,10 +18,24 @@ export const Route = createFileRoute('/')({
 const BYTES_PER_KB = 1024;
 const KB_PER_MB = 1024;
 const MAX_FILE_SIZE_MB = 1;
-const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * KB_PER_MB * BYTES_PER_KB; // 10MB
+const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * KB_PER_MB * BYTES_PER_KB; // 1MB
+const COPY_SUCCESS_TIMEOUT = 2000;
 
 function RouteComponent() {
   const [updatedHtml, setUpdatedHtml] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handleCopyToClipboard = async () => {
+    await navigator.clipboard.writeText(updatedHtml);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), COPY_SUCCESS_TIMEOUT);
+  };
+
+  const handleStartOver = () => {
+    setUpdatedHtml('');
+    setCopySuccess(false);
+    form.reset();
+  };
 
   const { mutateAsync: shortenUrls } = useMutation({
     mutationFn: async (urls: string[]) => {
@@ -44,16 +59,30 @@ function RouteComponent() {
     },
     onSubmit: async () => {
       const htmlContent = form.state.values.html;
-
-      // Extract URLs from HTML content using regex
-      const urlRegex = /https?:\/\/[^\s<>"']+/gi;
-      const urls = htmlContent.match(urlRegex) || [];
+      const urls = parseUrlsFromHtml(htmlContent);
 
       if (urls.length === 0) {
+        form.setErrorMap({
+          onSubmit: {
+            fields: { html: { message: 'No URLs found in the HTML content' } },
+          },
+        });
         return;
       }
+
       const { urls: shortenedUrls } = await shortenUrls(urls);
-      setUpdatedHtml(shortenedUrls);
+
+      // Replace original URLs with shortened URLs in the HTML content
+      let processedHtml = htmlContent;
+      for (let i = 0; i < urls.length; i++) {
+        const originalUrl = urls[i];
+        const shortenedUrl = shortenedUrls[i];
+        if (shortenedUrl) {
+          processedHtml = processedHtml.replaceAll(originalUrl, shortenedUrl);
+        }
+      }
+
+      setUpdatedHtml(processedHtml);
     },
     validators: {
       onSubmit: z.object({
@@ -90,22 +119,62 @@ function RouteComponent() {
       >
         <div className="w-full max-w-md px-4 sm:px-0">
           {updatedHtml ? (
-            <div className="fade-in-0 slide-in-from-bottom-4 animate-in rounded-lg border border-success/50 bg-success/40 p-3 text-center duration-500 sm:p-6">
-              <div className="mb-3">
-                <div className="zoom-in mx-auto flex h-12 w-12 animate-in items-center justify-center rounded-full bg-success/50 duration-300">
-                  <CheckIcon className="h-6 w-6 text-success-foreground" />
+            <div className="fade-in-0 slide-in-from-bottom-4 animate-in space-y-4 duration-500">
+              <div className="rounded-lg border border-success/50 bg-success/40 p-3 text-center sm:p-6">
+                <div className="mb-3">
+                  <div className="zoom-in mx-auto flex h-12 w-12 animate-in items-center justify-center rounded-full bg-success/50 duration-300">
+                    <CheckIcon className="h-6 w-6 text-success-foreground" />
+                  </div>
                 </div>
+                <h3 className="mb-2 font-semibold text-lg text-success-foreground">
+                  URLs Shortened Successfully!
+                </h3>
+                <p className="mb-4 text-sm text-success-foreground/90 leading-relaxed">
+                  Your HTML content has been processed and all URLs have been
+                  shortened.
+                </p>
               </div>
-              <h3 className="mb-2 font-semibold text-lg text-success-foreground">
-                URLs Shortened Successfully!
-              </h3>
-              <p className="mb-4 text-sm text-success-foreground/90 leading-relaxed">
-                Your HTML content has been processed and all URLs have been
-                shortened.
-              </p>
-              <p className="text-success-foreground/90 text-xs">
-                The updated HTML with shortened URLs is ready for use.
-              </p>
+
+              <div className="rounded-lg border bg-card p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between">
+                  <h4 className="font-medium text-foreground text-sm">
+                    Processed HTML
+                  </h4>
+                  <Button
+                    className="h-8 px-3 text-xs"
+                    onClick={handleCopyToClipboard}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {copySuccess ? (
+                      <>
+                        <CheckIcon className="mr-1 h-3 w-3" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <CopyIcon className="mr-1 h-3 w-3" />
+                        Copy
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <ResizableTextarea
+                  className="min-h-32 w-full resize-none border-0 bg-muted/50 p-3 font-mono text-xs shadow-none focus-visible:ring-0"
+                  readOnly
+                  value={updatedHtml}
+                />
+              </div>
+
+              <div className="flex justify-center">
+                <Button
+                  className="px-6"
+                  onClick={handleStartOver}
+                  variant="outline"
+                >
+                  Process Another File
+                </Button>
+              </div>
             </div>
           ) : (
             <form.Subscribe>
@@ -113,127 +182,128 @@ function RouteComponent() {
                 <div
                   className={`transition-all duration-500 ease-out ${state.isSubmitting ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`}
                 >
-                  <form
-                    className="space-y-4"
-                    noValidate
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      form.handleSubmit();
-                    }}
-                  >
+                  <form className="space-y-4" noValidate>
                     <div className="relative">
                       <p className="mb-2 text-foreground/90 text-sm leading-relaxed">
                         Paste your HTML content to shorten all URLs
                       </p>
 
-                      <form.Field name="html">
-                        {(field) => (
-                          <div className="space-y-2">
-                            {/** biome-ignore lint/a11y/useFocusableInteractive: Must be a div because we are nesting a button */}
-                            {/** biome-ignore lint/a11y/useSemanticElements: Must be a div because we are nesting a button */}
-                            <div
-                              className={`relative w-full rounded-lg border bg-card p-4 text-left shadow-sm transition-all duration-300 focus-within:shadow-md focus-within:ring-2 focus-within:ring-ring/20 ${
-                                fileState.isDragging
-                                  ? 'border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20'
-                                  : 'hover:shadow-md'
-                              }`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                fileActions.openFileDialog();
-                              }}
-                              onDragEnter={fileActions.handleDragEnter}
-                              onDragLeave={fileActions.handleDragLeave}
-                              onDragOver={fileActions.handleDragOver}
-                              onDrop={fileActions.handleDrop}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
-                                  fileActions.openFileDialog();
-                                }
-                              }}
-                              role="button"
-                            >
-                              {/* Drag overlay */}
-                              {fileState.isDragging && (
-                                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-primary/10 backdrop-blur-sm">
-                                  <div className="flex flex-col items-center space-y-2 text-primary">
-                                    <UploadIcon className="h-8 w-8" />
-                                    <p className="font-medium text-sm">
-                                      Drop your HTML file here
-                                    </p>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-2">
+                          <form.Field name="html">
+                            {(field) => (
+                              <div className="space-y-2">
+                                {/** biome-ignore lint/a11y/useFocusableInteractive: Must be a div because we are nesting a button */}
+                                {/** biome-ignore lint/a11y/useSemanticElements: Must be a div because we are nesting a button */}
+                                <div
+                                  className={`relative w-full rounded-lg border bg-card p-4 text-left shadow-sm transition-all duration-300 focus-within:shadow-md focus-within:ring-2 focus-within:ring-ring/20 ${
+                                    fileState.isDragging
+                                      ? 'border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20'
+                                      : 'hover:shadow-md'
+                                  }`}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    fileActions.openFileDialog();
+                                  }}
+                                  onDragEnter={fileActions.handleDragEnter}
+                                  onDragLeave={fileActions.handleDragLeave}
+                                  onDragOver={fileActions.handleDragOver}
+                                  onDrop={fileActions.handleDrop}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      fileActions.openFileDialog();
+                                    }
+                                  }}
+                                  role="button"
+                                >
+                                  {/* Drag overlay */}
+                                  {fileState.isDragging && (
+                                    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-primary/10 backdrop-blur-sm">
+                                      <div className="flex flex-col items-center space-y-2 text-primary">
+                                        <UploadIcon className="h-8 w-8" />
+                                        <p className="font-medium text-sm">
+                                          Drop your HTML file here
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Hidden file input */}
+                                  <input
+                                    {...fileActions.getInputProps()}
+                                    className="hidden"
+                                  />
+
+                                  <div className="space-y-3">
+                                    <div className="relative flex items-center">
+                                      <ResizableTextarea
+                                        className="flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                                        disabled={state.isSubmitting}
+                                        hasError={
+                                          field.state.meta.isTouched &&
+                                          field.state.meta.errors.length > 0
+                                        }
+                                        id={field.name}
+                                        name={field.name}
+                                        onBlur={field.handleBlur}
+                                        onChange={(e) =>
+                                          field.handleChange(e.target.value)
+                                        }
+                                        placeholder="Paste HTML or drop a file..."
+                                        value={field.state.value}
+                                      />
+                                    </div>
+
+                                    <div className="flex justify-end">
+                                      <Button
+                                        className="group rounded-full px-6 py-2 font-medium text-sm transition-all duration-300 hover:shadow-md active:scale-95"
+                                        disabled={
+                                          !state.canSubmit ||
+                                          state.isSubmitting ||
+                                          !field.state.value
+                                        }
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          form.handleSubmit();
+                                        }}
+                                        size="sm"
+                                        type="button"
+                                      >
+                                        {state.isSubmitting ? (
+                                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                        ) : (
+                                          <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                        )}
+                                      </Button>
+                                    </div>
                                   </div>
                                 </div>
-                              )}
 
-                              {/* Hidden file input */}
-                              <input
-                                {...fileActions.getInputProps()}
-                                className="hidden"
-                              />
-
-                              <div className="space-y-3">
-                                <div className="relative flex items-center">
-                                  <ResizableTextarea
-                                    className="flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                                    disabled={state.isSubmitting}
-                                    hasError={
-                                      field.state.meta.isTouched &&
-                                      field.state.meta.errors.length > 0
-                                    }
-                                    id={field.name}
-                                    name={field.name}
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) =>
-                                      field.handleChange(e.target.value)
-                                    }
-                                    placeholder="Paste HTML or drop a file..."
-                                    value={field.state.value}
-                                  />
-                                </div>
-
-                                <div className="flex justify-end">
-                                  <Button
-                                    className="group rounded-full px-6 py-2 font-medium text-sm transition-all duration-300 hover:shadow-md active:scale-95"
-                                    disabled={
-                                      !state.canSubmit ||
-                                      state.isSubmitting ||
-                                      !field.state.value
-                                    }
-                                    size="sm"
-                                    type="submit"
+                                {field.state.meta.errors.map((error) => (
+                                  <p
+                                    className="text-destructive text-sm dark:text-red-400 dark:drop-shadow-sm"
+                                    key={error?.message}
                                   >
-                                    {state.isSubmitting ? (
-                                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                    ) : (
-                                      <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                                    )}
-                                  </Button>
-                                </div>
+                                    {error?.message}
+                                  </p>
+                                ))}
+
+                                {/* File upload errors */}
+                                {fileState.errors.map((error) => (
+                                  <p
+                                    className="text-destructive text-sm dark:text-red-400 dark:drop-shadow-sm"
+                                    key={error}
+                                  >
+                                    {error}
+                                  </p>
+                                ))}
                               </div>
-                            </div>
-
-                            {field.state.meta.errors.map((error) => (
-                              <p
-                                className="text-destructive text-sm dark:text-red-400 dark:drop-shadow-sm"
-                                key={error?.message}
-                              >
-                                {error?.message}
-                              </p>
-                            ))}
-
-                            {/* File upload errors */}
-                            {fileState.errors.map((error) => (
-                              <p
-                                className="text-destructive text-sm dark:text-red-400 dark:drop-shadow-sm"
-                                key={error}
-                              >
-                                {error}
-                              </p>
-                            ))}
-                          </div>
-                        )}
-                      </form.Field>
+                            )}
+                          </form.Field>
+                        </div>
+                      </div>
                     </div>
                   </form>
                 </div>
