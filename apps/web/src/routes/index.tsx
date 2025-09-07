@@ -73,7 +73,7 @@ function RouteComponent() {
         if (shortenedUrlObj?.shortUrl) {
           processedHtml = processedHtml.replaceAll(
             originalUrl,
-            shortenedUrlObj.shortUrl
+            `${import.meta.env.VITE_SERVER_URL}/${shortenedUrlObj.shortUrl}`
           );
         }
       }
