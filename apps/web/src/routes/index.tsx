@@ -3,12 +3,13 @@
 import { useForm } from '@tanstack/react-form';
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { ArrowRightIcon, CheckIcon, CopyIcon, UploadIcon } from 'lucide-react';
+import { ArrowRightIcon, UploadIcon } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ResizableTextarea from '@/components/ui/resizeable-textarea';
+import UrlResult from '@/components/url/url-result';
+import UrlSuccess from '@/components/url/url-success';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { parseUrlsFromHtml } from '@/lib/utils';
 
@@ -20,21 +21,12 @@ const BYTES_PER_KB = 1024;
 const KB_PER_MB = 1024;
 const MAX_FILE_SIZE_MB = 1;
 const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * KB_PER_MB * BYTES_PER_KB; // 1MB
-const COPY_SUCCESS_TIMEOUT = 2000;
 
 function RouteComponent() {
   const [updatedHtml, setUpdatedHtml] = useState('');
-  const [copySuccess, setCopySuccess] = useState(false);
-
-  const handleCopyToClipboard = async () => {
-    await navigator.clipboard.writeText(updatedHtml);
-    setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), COPY_SUCCESS_TIMEOUT);
-  };
 
   const handleStartOver = () => {
     setUpdatedHtml('');
-    setCopySuccess(false);
     form.reset();
   };
 
@@ -124,55 +116,8 @@ function RouteComponent() {
         <div className="w-full max-w-md px-4 sm:px-0">
           {updatedHtml ? (
             <div className="fade-in-0 slide-in-from-bottom-4 animate-in space-y-4 duration-500">
-              <Card className="border-primary/50 bg-primary/30 text-center">
-                <CardContent className="pt-6">
-                  <div className="mb-3">
-                    <div className="zoom-in mx-auto flex h-12 w-12 animate-in items-center justify-center rounded-full bg-primary/50 duration-300">
-                      <CheckIcon className="h-6 w-6 text-success-foreground" />
-                    </div>
-                  </div>
-                  <CardTitle className="mb-2 text-lg text-success-foreground">
-                    URLs Shortened Successfully!
-                  </CardTitle>
-                  <p className="text-sm text-success-foreground/90 leading-relaxed">
-                    Your HTML content has been processed and all URLs have been
-                    shortened.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm">Processed HTML</CardTitle>
-                    <Button
-                      className="h-8 px-3 text-xs"
-                      onClick={handleCopyToClipboard}
-                      size="sm"
-                      variant="outline"
-                    >
-                      {copySuccess ? (
-                        <>
-                          <CheckIcon className="mr-1 h-3 w-3" />
-                          Copied!
-                        </>
-                      ) : (
-                        <>
-                          <CopyIcon className="mr-1 h-3 w-3" />
-                          Copy
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ResizableTextarea
-                    className="min-h-32 w-full resize-none border-0 bg-muted/50 p-3 font-mono text-xs shadow-none focus-visible:ring-0"
-                    readOnly
-                    value={updatedHtml}
-                  />
-                </CardContent>
-              </Card>
+              <UrlSuccess />
+              <UrlResult updatedHtml={updatedHtml} />
 
               <div className="flex justify-center">
                 <Button
@@ -259,9 +204,21 @@ function RouteComponent() {
                                           field.handleChange(e.target.value)
                                         }
                                         onKeyDown={(e) => {
+                                          // Handle Ctrl+Enter or Cmd+Enter to submit form
+                                          if (
+                                            (e.ctrlKey || e.metaKey) &&
+                                            e.key === 'Enter' &&
+                                            state.canSubmit &&
+                                            !state.isSubmitting &&
+                                            field.state.value
+                                          ) {
+                                            e.stopPropagation();
+                                            form.handleSubmit();
+                                            return;
+                                          }
+
                                           // Prevent parent div from handling keys that should work normally in textarea
                                           // This ensures proper text input and navigation functionality
-
                                           if (
                                             e.key === 'Enter' ||
                                             e.key === ' '
@@ -283,9 +240,18 @@ function RouteComponent() {
                                           !field.state.value
                                         }
                                         onClick={(e) => {
-                                          e.preventDefault();
                                           e.stopPropagation();
                                           form.handleSubmit();
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (
+                                            ((e.ctrlKey || e.metaKey) &&
+                                              e.key === 'Enter') ||
+                                            e.key === ' '
+                                          ) {
+                                            e.stopPropagation();
+                                            form.handleSubmit();
+                                          }
                                         }}
                                         size="sm"
                                         type="button"
@@ -299,6 +265,16 @@ function RouteComponent() {
                                     </div>
                                   </div>
                                 </div>
+
+                                <p className="text-foreground/70 text-xs">
+                                  Accepts{' '}
+                                  <span className="font-semibold">
+                                    .html, .htm,
+                                  </span>{' '}
+                                  and{' '}
+                                  <span className="font-semibold">.txt</span>{' '}
+                                  files. {MAX_FILE_SIZE_MB}MB max.
+                                </p>
 
                                 {field.state.meta.errors.map((error) => (
                                   <p

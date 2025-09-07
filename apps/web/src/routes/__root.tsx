@@ -19,7 +19,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({
     meta: [
       {
-        title: 'Zaymo | URL Shortener',
+        title: 'Zaym | URL Shortener',
       },
       {
         name: 'description',
@@ -51,7 +51,7 @@ function RootComponent() {
         </div>
         <Toaster richColors />
       </ThemeProvider>
-      <TanStackRouterDevtools position="bottom-left" />
+      {import.meta.env.DEV && <TanStackRouterDevtools position="bottom-left" />}
     </>
   );
 }
