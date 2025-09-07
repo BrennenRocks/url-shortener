@@ -8,12 +8,16 @@ Some URL formats fail at the moment
 
 ### Considerations
 
--Currently we make 2 DB calls to insert a URL so we can retrieve the ID to encode it. We could
-have a counter elsewhere (Redis Cache or something a little more persistent) that we can just read
-to encode instead of 2 write commands
+- Currently we make 2 DB calls to insert a URL so we can retrieve the ID to encode it. We could
+  have a counter elsewhere (Redis Cache or something a little more persistent) that we can just read
+  to encode instead of 2 write commands
 
 - There's no caching in this implementation but we should use a Redis Cache to stored the most used URLs
   or we could even store all urls created for 1 week because it may be likely that most urls are "short" lived
+
+- I'm using the url for the api as my short URL. I'm running up on 5 hours on the project and when I fetch
+  the backend from the frontend and the backend redirects I get CORS errors because my front end is the ORIGIN
+  - This could be remedied by my backend serving static react files.
 
 # Dev
 

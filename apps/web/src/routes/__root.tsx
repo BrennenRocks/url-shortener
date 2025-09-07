@@ -3,7 +3,7 @@ import {
   HeadContent,
   Outlet,
 } from '@tanstack/react-router';
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+// import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import Header from '@/components/header';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
@@ -51,7 +51,7 @@ function RootComponent() {
         </div>
         <Toaster richColors />
       </ThemeProvider>
-      {import.meta.env.DEV && <TanStackRouterDevtools position="bottom-left" />}
+      {/* {import.meta.env.DEV && <TanStackRouterDevtools position="bottom-left" />} */}
     </>
   );
 }
