@@ -1,5 +1,15 @@
 # URL Shortener
 
+## Walkthrough
+
+(Hopefully you won't need a walkthrough as the UI should walk you through the process itself)
+
+### DEMO
+
+https://zaym.us
+
+Type, paste your content, or drag and drop a file onto the textarea to have it fill up with your text. Click submit (or CTRL/CMD + Enter) to see your URLs shortened
+
 ## Short Comings and Considerations
 
 Some URL formats fail at the moment
@@ -8,11 +18,11 @@ Some URL formats fail at the moment
 
 ### Considerations
 
-- Currently we make 2 DB calls to insert a URL so we can retrieve the ID to encode it. We could
+- Currently we make 3 DB calls to insert a URL so we can check for duplicates and retrieve the ID to encode it. We could
   have a counter elsewhere (Redis Cache or something a little more persistent) that we can just read
   to encode instead of 2 write commands
 
-- There's no caching in this implementation but we should use a Redis Cache to stored the most used URLs
+- There's no caching in this implementation but we should use a Redis Cache to store the most used URLs
   or we could even store all urls created for 1 week because it may be likely that most urls are "short" lived
 
 - I'm using the url for the api as my short URL. I'm running up on 5 hours on the project and when I fetch
