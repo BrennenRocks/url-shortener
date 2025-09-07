@@ -1,28 +1,32 @@
 {
-	"name": "zaymo-url-shortener",
-	"private": true,
-	"workspaces": [
-		"apps/*",
-		"packages/*"
-	],
-	"scripts": {
-		"check": "biome check --write .",
-		"dev": "turbo dev",
-		"build": "turbo build",
-		"check-types": "turbo check-types",
-		"dev:native": "turbo -F native dev",
-		"dev:web": "turbo -F web dev",
-		"dev:server": "turbo -F server dev",
-		"db:push": "turbo -F server db:push",
-		"db:studio": "turbo -F server db:studio",
-		"db:generate": "turbo -F server db:generate",
-		"db:migrate": "turbo -F server db:migrate"
-	},
-	"dependencies": {},
-	"devDependencies": {
-		"@biomejs/biome": "2.2.2",
-		"turbo": "^2.5.6",
-		"ultracite": "^5.3.3"
-	},
-	"packageManager": "bun@1.2.21"
+  "name": "zaymo-url-shortener",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "check": "biome check --write .",
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F server dev",
+    "db:push": "turbo -F server db:push",
+    "db:studio": "turbo -F server db:studio",
+    "db:generate": "turbo -F server db:generate",
+    "db:migrate": "turbo -F server db:migrate",
+    "build:server": "bun i --ci && turbo -F server build",
+    "build:web": "bun i --ci && turbo -F web build",
+    "start:server": "turbo -F server start",
+    "start:web": "turbo -F web start"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@biomejs/biome": "2.2.2",
+    "turbo": "^2.5.6",
+    "ultracite": "^5.3.3"
+  },
+  "packageManager": "bun@1.2.21"
 }
