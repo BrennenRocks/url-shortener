@@ -31,7 +31,7 @@ app.post(
   zValidator(
     'json',
     z.object({
-      urls: z.array(z.string().url('Invalid URL')),
+      urls: z.array(z.url('Invalid URL')),
     })
   ),
   async (c) => {
@@ -66,16 +66,16 @@ app.post(
 );
 
 app.get(
-  '/url',
+  '/:shortUrl',
   zValidator(
-    'query',
+    'param',
     z.object({
-      shortUrl: z.url('Invalid URL'),
+      shortUrl: z.string(),
     })
   ),
   async (c) => {
     try {
-      const { shortUrl } = c.req.valid('query');
+      const { shortUrl } = c.req.valid('param');
       const longUrl = await getUrlByShortUrl(shortUrl);
 
       if (!longUrl) {

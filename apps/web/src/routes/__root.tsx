@@ -41,9 +41,9 @@ function RootComponent() {
       <HeadContent />
       <ThemeProvider
         attribute="class"
-        defaultTheme="dark"
+        defaultTheme="system"
         disableTransitionOnChange
-        storageKey="vite-ui-theme"
+        storageKey="zaym-url-shortener-ui-theme"
       >
         <div className="grid h-svh grid-rows-[auto_1fr]">
           <Header />
